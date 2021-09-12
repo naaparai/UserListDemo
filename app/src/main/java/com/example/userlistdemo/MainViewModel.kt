@@ -8,10 +8,14 @@ import com.example.userlistdemo.model.User
 import com.example.userlistdemo.repository.UserRepository
 import com.example.userlistdemo.util.Event
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltViewModel
-class MainViewModel(private val repository: UserRepository) : ViewModel() {
+class MainViewModel @Inject constructor(
+    private val repository: UserRepository
+) : ViewModel() {
     private val _userList = MutableLiveData<List<User>>(emptyList())
     val userList: LiveData<List<User>>
         get() = _userList
@@ -30,7 +34,7 @@ class MainViewModel(private val repository: UserRepository) : ViewModel() {
 
     fun fetchUsers() {
         _progressBarVisibility.postValue(true)
-        viewModelScope.launch {
+        viewModelScope.launch(IO) {
             val result = repository.getUsers()
             handleResult(result)
         }
@@ -38,10 +42,10 @@ class MainViewModel(private val repository: UserRepository) : ViewModel() {
 
     private fun handleResult(result: Result<List<User>>) {
         _progressBarVisibility.postValue(false)
-        if (result.isFailure) {
-            _showErrorToast.postValue(Event(Unit))
-        } else {
+        if (result.isSuccess) {
             _userList.postValue(result.getOrNull())
+        } else {
+            _showErrorToast.postValue(Event(Unit))
         }
     }
 }
